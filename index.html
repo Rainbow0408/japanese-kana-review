@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="零依赖的日语假名与发音规则闪卡复习工具">
+  <title>日语假名复习</title>
+  <link rel="stylesheet" href="styles.css?v=20260820-1">
+</head>
+<body>
+  <header class="site-header">
+    <button class="brand text" data-view="home">日语假名复习 <small>快速闪卡，把学过的内容真正记牢。</small></button>
+    <nav aria-label="主要导航">
+      <button id="open-settings">设置</button>
+      <button data-view="table">假名表</button>
+      <button data-view="records">学习记录</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="home" class="view active">
+      <div class="dashboard-head">
+        <div>
+          <p class="eyebrow">每日快速复习</p>
+          <h1>日语假名复习</h1>
+          <p class="subtitle">快速闪卡，把学过的内容真正记牢。</p>
+        </div>
+        <div class="overview-card" aria-label="学习内容概览">
+          <div class="overview-numbers"><span>已加入复习 <b id="dashboard-learned">0</b></span><span>薄弱内容 <b id="dashboard-weak">0</b></span></div>
+          <div class="dashboard-progress" aria-hidden="true"><i id="dashboard-progress"></i></div>
+          <p id="dashboard-advice" class="advice">先把学过的类别加入复习池。</p>
+        </div>
+      </div>
+
+      <div id="category-overview" class="category-overview" aria-label="学习内容状态"></div>
+
+      <div class="mode-grid" aria-label="学习模式">
+        <button class="mode-card selected" data-mode="review" aria-pressed="true">
+          <span class="mode-icon">🔁</span><b>巩固复习</b><small>从已学内容中随机闪卡，薄弱内容会更多出现。</small>
+        </button>
+        <button class="mode-card" data-mode="browse" aria-pressed="false">
+          <span class="mode-icon">📚</span><b>快速过新内容</b><small>快速浏览还没加入复习池的新内容。</small>
+        </button>
+        <button class="mode-card" data-mode="test" aria-pressed="false">
+          <span class="mode-icon">🎯</span><b>自定义测试</b><small>自己选择内容、题量和出题方式。</small>
+        </button>
+      </div>
+
+      <section class="mode-panel" aria-live="polite">
+        <div id="mode-settings"></div>
+        <p id="mode-message" class="inline-note" hidden></p>
+        <div class="home-actions">
+          <button id="mode-start" class="primary wide">开始复习</button>
+          <button id="weak-start">只练薄弱项</button>
+          <button id="all-start" hidden>全部已学内容 · 30 题</button>
+        </div>
+      </section>
+    </section>
+
+    <section id="flashcards" class="view">
+      <div class="practice-head">
+        <button class="text" data-view="home">← 返回首页</button>
+        <div class="stage-progress"><b id="stage-label">巩固复习</b><span id="stage-position"></span></div>
+      </div>
+      <p id="group-trail" class="group-trail"></p>
+      <div class="card-panel">
+        <div id="practice-content"></div>
+        <p id="practice-feedback" class="feedback" aria-live="polite"></p>
+        <p id="audio-note" class="audio-note" aria-live="polite" hidden></p>
+        <button class="text replay" id="replay-audio" hidden>🔊 重播发音</button>
+      </div>
+      <p class="keyboard-hint">空格：显示答案 / 认识　1：认识　2：模糊　3：不认识</p>
+    </section>
+
+    <section id="summary" class="view">
+      <div class="panel summary-panel">
+        <p class="eyebrow">本轮完成</p>
+        <h1 id="summary-title">复习完成</h1>
+        <div class="stats" id="summary-stats"></div>
+        <div id="summary-detail"></div>
+        <div class="actions" id="summary-actions"></div>
+      </div>
+    </section>
+
+    <section id="table" class="view">
+      <div class="page-title"><p class="eyebrow">完整学习内容</p><h1>假名表</h1></div>
+      <div class="table-tabs" role="tablist" aria-label="假名类别">
+        <button class="selected" data-table-tab="basic">基础五十音</button>
+        <button data-table-tab="marks">浊音 / 半浊音</button>
+        <button data-table-tab="youon">拗音</button>
+        <button data-table-tab="rules">发音规则</button>
+      </div>
+      <div class="table-layout"><div id="kana-grid" class="kana-grid"></div><aside id="kana-detail" class="detail">选择任意项目查看详情。</aside></div>
+    </section>
+
+    <section id="records" class="view">
+      <div class="page-title"><p class="eyebrow">保存在当前浏览器</p><h1>学习记录</h1></div>
+      <div id="record-overview" class="stats"></div>
+      <div id="record-list" class="category-records"></div>
+    </section>
+  </main>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" class="dialog-head"><h2>设置</h2><button class="text" value="cancel" aria-label="关闭">✕</button></form>
+    <section class="dialog-section">
+      <h3>基础五十音旧进度</h3>
+      <p class="muted">仅用于兼容原来的 46 音进度。降低进度不会删除历史评分。</p>
+      <label class="number-field">我已经学到第 <input id="manual-progress" type="number" min="0" max="46" value="0"> 个音</label>
+      <button class="primary" id="save-manual-progress" type="button">保存进度</button>
+      <p id="settings-message" class="inline-note" hidden></p>
+    </section>
+    <section class="dialog-section data-management">
+      <h3>数据管理</h3>
+      <p class="muted">学习记录只保存在这个浏览器中。</p>
+      <button class="text danger" id="reset" type="button">清空全部学习记录</button>
+    </section>
+  </dialog>
+
+  <dialog id="confirm">
+    <h2>确定要清空全部学习记录吗？</h2>
+    <p>类别状态和所有历史评分都会被清除，此操作无法撤销。</p>
+    <div class="actions"><button class="danger" id="confirm-reset">确认清空</button><button id="cancel-reset">取消</button></div>
+  </dialog>
+
+  <script type="module" src="js/app.js?v=20260820-1"></script>
+</body>
+</html>

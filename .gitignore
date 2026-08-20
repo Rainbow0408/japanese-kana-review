@@ -1,0 +1,28 @@
+# Operating systems
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Local learning-data exports and debug dumps
+export.json
+user-data.json
+progress.json
+*-debug.json
+debug-dump*
+
+# Optional local tooling
+node_modules/
+coverage/
