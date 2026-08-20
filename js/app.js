@@ -1,12 +1,13 @@
-import { BASIC_KANA, CATEGORIES, CATEGORY_IDS, STUDY_ITEMS, itemById, itemsByCategory } from './data.js?v=20260820-1';
-import { buildReviewPool, buildSummary, createSession, displayForItem, nextCard, rateCard } from './flashcards.js?v=20260820-1';
-import { getBrowseItem, isBrowseComplete, nextBrowseIndex, previousBrowseIndex } from './new-learning.js?v=20260820-1';
+import { BASIC_KANA, CATEGORIES, CATEGORY_IDS, STUDY_ITEMS, itemById, itemsByCategory } from './data.js?v=20260820-2';
+import { buildRangedReviewPool, buildReviewPool, buildSummary, createSession, displayForItem, nextCard, rateCard } from './flashcards.js?v=20260820-2';
+import { getBrowseItem, isBrowseComplete, nextBrowseIndex, previousBrowseIndex } from './new-learning.js?v=20260820-2';
 import {
   finishBrowsing, isWeakRecord, joinCategory, loadState, markSeen, proficiencyFor,
   recordRating, resetState, saveBrowseProgress, saveSettings, setCourseUntil,
-} from './storage.js?v=20260820-1';
-import { playStudyItem, registerAudioInteraction } from './audio.js?v=20260820-1';
-import { resolveFlashcardSpaceAction } from './keyboard.js?v=20260820-1';
+} from './storage.js?v=20260820-2';
+import { playStudyItem, registerAudioInteraction } from './audio.js?v=20260820-2';
+import { resolveFlashcardSpaceAction } from './keyboard.js?v=20260820-2';
+import { normalizeReviewRange, reviewRangeSummary, updateReviewRange } from './review-range.js?v=20260820-2';
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -54,6 +55,79 @@ function categoryChecks(name, selected, learnedOnly = false) {
   }).join('')}</div>`;
 }
 
+function reviewSourcePool() {
+  return buildReviewPool(STUDY_ITEMS, state, state.settings.reviewCategories, { learnedOnly: true });
+}
+
+function currentReviewRange(pool = reviewSourcePool()) {
+  return normalizeReviewRange(pool.length, state.settings.reviewRangeStart, state.settings.reviewRangeEnd);
+}
+
+function rangeControlsTemplate(pool, location = 'home') {
+  const range = currentReviewRange(pool);
+  const disabled = pool.length === 0 ? 'disabled' : '';
+  const maximum = Math.max(1, pool.length);
+  const start = range.start || 1;
+  const end = range.end || 1;
+  return `<div class="review-range-controls" data-range-location="${location}">
+    <div class="setting-heading"><b>复习范围</b><span class="review-range-summary">${reviewRangeSummary(pool.length, range.start, range.endSetting)}</span></div>
+    <div class="range-bound"><label>从第 <input type="number" min="1" max="${maximum}" value="${start}" data-review-range-bound="start" aria-label="复习范围起点" ${disabled}> 项开始</label><input type="range" min="1" max="${maximum}" value="${start}" data-review-range-bound="start" aria-label="拖动选择复习范围起点" ${disabled}></div>
+    <div class="range-bound"><label>到第 <input type="number" min="1" max="${maximum}" value="${end}" data-review-range-bound="end" aria-label="复习范围终点" ${disabled}> 项结束</label><input type="range" min="1" max="${maximum}" value="${end}" data-review-range-bound="end" aria-label="拖动选择复习范围终点" ${disabled}></div>
+    <div class="range-actions"><button type="button" data-action="all-review-range" ${disabled}>全部范围</button><button type="button" data-action="open-review-range" ${disabled}>查看全部假名</button></div>
+    <p class="hint">按已勾选类别的固定顺序合并后截取，起点和终点都包含在内。</p>
+  </div>`;
+}
+
+function rangePreviewTemplate(pool) {
+  const range = currentReviewRange(pool);
+  let offset = 0;
+  return CATEGORY_IDS.map((category) => {
+    const items = pool.filter((item) => item.category === category);
+    if (!items.length) return '';
+    const cells = items.map((item, localIndex) => {
+      const index = offset + localIndex + 1;
+      const selected = index >= range.start && index <= range.end;
+      return `<div class="range-item ${selected ? 'selected' : ''}" role="option" aria-selected="${selected}"><span class="range-item-index">${index}</span><b>${itemForm(item)}</b><small>${item.romaji}</small>${selected ? '<em>已选</em>' : ''}</div>`;
+    }).join('');
+    offset += items.length;
+    return `<section class="range-category"><h3>${CATEGORIES[category].label}<span>${items.length} 项</span></h3><div class="range-items">${cells}</div></section>`;
+  }).join('');
+}
+
+function syncReviewRangeUi() {
+  const pool = reviewSourcePool();
+  const range = currentReviewRange(pool);
+  const maximum = Math.max(1, pool.length);
+  $$('[data-review-range-bound]').forEach((input) => {
+    input.max = String(maximum);
+    input.disabled = pool.length === 0;
+    input.value = String(input.dataset.reviewRangeBound === 'start' ? (range.start || 1) : (range.end || 1));
+  });
+  $$('.review-range-summary').forEach((element) => { element.textContent = reviewRangeSummary(pool.length, range.start, range.endSetting); });
+  if ($('#review-range-dialog').open) $('#review-range-grid').innerHTML = rangePreviewTemplate(pool);
+}
+
+function changeReviewRange(bound, value, persist = false) {
+  const pool = reviewSourcePool();
+  const range = updateReviewRange(pool.length, state.settings.reviewRangeStart, state.settings.reviewRangeEnd, bound, value);
+  state.settings.reviewRangeStart = range.start || 1;
+  state.settings.reviewRangeEnd = range.endSetting;
+  if (persist) state = saveSettings({ reviewRangeStart: state.settings.reviewRangeStart, reviewRangeEnd: state.settings.reviewRangeEnd });
+  syncReviewRangeUi();
+}
+
+function saveAllReviewRange() {
+  state = saveSettings({ reviewRangeStart: 1, reviewRangeEnd: null });
+  syncReviewRangeUi();
+}
+
+function openReviewRangeDialog() {
+  const pool = reviewSourcePool();
+  $('#review-range-dialog-controls').innerHTML = rangeControlsTemplate(pool, 'dialog');
+  $('#review-range-grid').innerHTML = rangePreviewTemplate(pool);
+  $('#review-range-dialog').showModal();
+}
+
 function renderDashboard() {
   state = loadState();
   const learned = learnedPool();
@@ -81,11 +155,13 @@ function renderDashboard() {
 
 function reviewSettingsTemplate() {
   const settings = state.settings;
+  const pool = reviewSourcePool();
   return `<div class="settings-grid review-settings">
     <div class="setting-block category-setting"><div class="setting-heading"><b>今天复习什么？</b><button type="button" class="text compact" data-action="select-all-learned">全选已学</button></div>${categoryChecks('reviewCategories', settings.reviewCategories, true)}</div>
     <div class="setting-block"><b>假名形式</b>${segment('reviewScript', scriptOptions, settings.reviewScript)}</div>
     <div class="setting-block"><b>题目数量</b>${segment('reviewCount', countOptions, settings.reviewCount)}</div>
     <div class="setting-block"><b>出题方式</b>${segment('reviewMode', [['smart', '智能复习'], ['uniform', '均匀随机']], settings.reviewMode)}<span class="hint">模糊权重 3，不认识权重 5</span></div>
+    <div class="setting-block review-range-setting">${rangeControlsTemplate(pool)}</div>
   </div>`;
 }
 
@@ -134,6 +210,11 @@ function toggleCategorySetting(name, category, checked) {
   const selected = new Set(state.settings[name]);
   if (checked) selected.add(category); else selected.delete(category);
   state = saveSettings({ [name]: CATEGORY_IDS.filter((id) => selected.has(id)) });
+  if (name === 'reviewCategories') {
+    const pool = reviewSourcePool();
+    const range = currentReviewRange(pool);
+    state = saveSettings({ reviewRangeStart: range.start || 1, reviewRangeEnd: range.endSetting });
+  }
   renderHome();
 }
 
@@ -219,7 +300,10 @@ function renderBrowseComplete() {
 function startReview(customPool = null, overrides = {}) {
   state = loadState();
   const categories = overrides.categories ?? state.settings.reviewCategories;
-  const pool = customPool ?? buildReviewPool(STUDY_ITEMS, state, categories, { learnedOnly: true, weakOnly: Boolean(overrides.weakOnly) });
+  const pool = customPool ?? buildRangedReviewPool(STUDY_ITEMS, state, categories, {
+    start: state.settings.reviewRangeStart,
+    end: state.settings.reviewRangeEnd,
+  }, { learnedOnly: true, weakOnly: Boolean(overrides.weakOnly) });
   if (!pool.length) { activate('home'); setModeMessage(overrides.weakOnly ? '暂时没有明显薄弱内容。' : '请先选择已经加入复习池的内容。'); return; }
   startCardSession('review', pool, {
     script: overrides.script ?? state.settings.reviewScript,
@@ -357,6 +441,26 @@ $('#mode-settings').addEventListener('change', (event) => {
   const input = event.target.closest('[data-category-setting]');
   if (input) toggleCategorySetting(input.dataset.categorySetting, input.value, input.checked);
 });
+
+document.addEventListener('input', (event) => {
+  const input = event.target.closest('[data-review-range-bound]');
+  if (!input || input.value === '') return;
+  changeReviewRange(input.dataset.reviewRangeBound, input.value);
+});
+
+document.addEventListener('change', (event) => {
+  const input = event.target.closest('[data-review-range-bound]');
+  if (!input) return;
+  changeReviewRange(input.dataset.reviewRangeBound, input.value || 1, true);
+});
+
+document.addEventListener('click', (event) => {
+  const action = event.target.closest('[data-action]')?.dataset.action;
+  if (action === 'all-review-range') saveAllReviewRange();
+  if (action === 'open-review-range') openReviewRangeDialog();
+});
+
+$('#close-review-range').addEventListener('click', () => $('#review-range-dialog').close());
 
 $('#mode-start').addEventListener('click', startCurrentMode);
 $('#weak-start').addEventListener('click', () => { registerAudioInteraction(); startReview(null, { categories: state.settings.reviewCategories, weakOnly: true }); });

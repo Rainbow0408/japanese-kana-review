@@ -104,6 +104,16 @@ h2, h3 { line-height: 1.25; }
 .setting-block { min-width: 0; }
 .setting-block > b { display: block; margin-bottom: 8px; }
 .setting-block .hint { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+.review-range-setting { grid-column: 2 / -1; }
+.review-range-controls { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: #f8faf7; }
+.review-range-controls .setting-heading { margin-bottom: 12px; }
+.review-range-summary { color: var(--green-dark); font-weight: 750; }
+.range-bound { display: grid; grid-template-columns: 200px minmax(180px, 1fr); align-items: center; gap: 14px; margin: 10px 0; }
+.range-bound label { white-space: nowrap; }
+.range-bound input[type="number"] { width: 70px; min-height: 42px; }
+.range-bound input[type="range"] { width: 100%; min-height: 42px; accent-color: var(--green); cursor: pointer; }
+.range-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.range-actions button { min-height: 44px; }
 .setting-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
 .setting-heading .hint { color: var(--muted); font-size: 12px; }
 .compact { padding: 4px 7px; font-size: 13px; }
@@ -206,6 +216,20 @@ mark { padding: 0 .08em; border-radius: .16em; color: var(--green-dark); backgro
 
 dialog { width: min(520px, calc(100vw - 28px)); padding: 26px; border: 0; border-radius: 18px; color: var(--ink); box-shadow: 0 24px 80px rgba(18, 36, 27, .24); }
 dialog::backdrop { background: rgba(20, 34, 27, .48); }
+.review-range-dialog { width: min(1040px, calc(100vw - 38px)); max-height: calc(100vh - 38px); overflow: auto; }
+.review-range-dialog > .dialog-head { position: sticky; top: -26px; z-index: 2; margin: -26px -26px 0; padding: 22px 26px 14px; background: #fff; border-bottom: 1px solid var(--line); }
+.review-range-dialog .dialog-head .eyebrow { margin-bottom: 4px; }
+.review-range-dialog #review-range-dialog-controls { margin: 18px 0 22px; }
+.review-range-grid { display: grid; gap: 22px; }
+.range-category h3 { display: flex; align-items: baseline; justify-content: space-between; margin: 0 0 10px; }
+.range-category h3 span { color: var(--muted); font-size: 13px; font-weight: 500; }
+.range-items { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; }
+.range-item { position: relative; min-height: 88px; display: grid; place-items: center; align-content: center; padding: 12px 6px 8px; border: 1px solid var(--line); border-radius: 12px; background: #f4f6f3; color: var(--muted); opacity: .62; }
+.range-item b { color: var(--ink); font-family: "Yu Gothic", "Noto Sans JP", sans-serif; font-size: 21px; text-align: center; }
+.range-item small { font-size: 11px; }
+.range-item-index { position: absolute; top: 5px; left: 7px; font-size: 10px; }
+.range-item em { position: absolute; top: 5px; right: 6px; color: var(--green-dark); font-size: 9px; font-style: normal; font-weight: 800; }
+.range-item.selected { border-color: var(--green); background: var(--green-pale); color: var(--green-dark); box-shadow: inset 0 0 0 1px rgba(47,112,84,.25); opacity: 1; }
 .dialog-head { display: flex; align-items: center; justify-content: space-between; }
 .dialog-head h2 { margin: 0; }
 .dialog-section { padding: 18px 0; border-top: 1px solid var(--line); }
@@ -220,6 +244,8 @@ dialog::backdrop { background: rgba(20, 34, 27, .48); }
   .mode-card { min-height: auto; }
   .settings-grid { grid-template-columns: 1fr 1fr; }
   .category-setting { grid-row: auto; grid-column: 1 / -1; }
+  .review-range-setting { grid-column: 1 / -1; }
+  .range-items { grid-template-columns: repeat(6, minmax(0, 1fr)); }
   .table-layout { grid-template-columns: 1fr; }
 }
 
@@ -242,6 +268,9 @@ dialog::backdrop { background: rgba(20, 34, 27, .48); }
   .mode-panel { padding: 16px; }
   .settings-grid { grid-template-columns: 1fr; gap: 14px; }
   .category-setting { grid-column: auto; }
+  .review-range-setting { grid-column: auto; }
+  .range-bound { grid-template-columns: 1fr; gap: 2px; }
+  .range-items { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .category-checks, .browse-category-grid { grid-template-columns: 1fr 1fr; }
   .home-actions { grid-template-columns: 1fr; }
   .practice-head { align-items: flex-start; }

@@ -1,4 +1,5 @@
-import { isWeakRecord } from './storage.js?v=20260820-1';
+import { isWeakRecord } from './storage.js?v=20260820-2';
+import { sliceReviewRange } from './review-range.js?v=20260820-2';
 
 export function buildPool(items, range) {
   if (typeof range === 'number') return items.slice(0, Math.max(1, Math.min(range, items.length)));
@@ -27,6 +28,13 @@ export function buildReviewPool(items, state, categories, options = {}) {
     if (options.weakOnly && !isWeakRecord(record)) return false;
     return true;
   });
+}
+
+export function buildRangedReviewPool(items, state, categories, range = {}, options = {}) {
+  const merged = buildReviewPool(items, state, categories, { ...options, weakOnly: false });
+  const ranged = sliceReviewRange(merged, range.start, range.end);
+  if (!options.weakOnly) return ranged;
+  return ranged.filter((item) => isWeakRecord(state.records?.[item.id]));
 }
 
 export const reviewWeight = (record = {}) => record.lastResult === 'unknown' ? 5 : record.lastResult === 'fuzzy' ? 3 : 1;

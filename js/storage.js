@@ -1,4 +1,4 @@
-import { BASIC_KANA, CATEGORY_IDS, STUDY_ITEMS, itemById, itemsByCategory } from './data.js?v=20260820-1';
+import { BASIC_KANA, CATEGORY_IDS, STUDY_ITEMS, itemById, itemsByCategory } from './data.js?v=20260820-2';
 
 export const STORAGE_KEY = 'kana-flashcards-v1';
 export const DEFAULT_SETTINGS = {
@@ -7,6 +7,8 @@ export const DEFAULT_SETTINGS = {
   reviewScript: 'mixed',
   reviewCount: 30,
   reviewMode: 'smart',
+  reviewRangeStart: 1,
+  reviewRangeEnd: null,
   browseCategory: 'dakuten',
   testCategories: [...CATEGORY_IDS],
   testScript: 'mixed',
@@ -39,6 +41,7 @@ const validStatus = (value) => ['not_started', 'browsing', 'browsed', 'joined'].
 const validScript = (value) => ['mixed', 'hiragana', 'katakana'].includes(value) ? value : 'mixed';
 const validCount = (value, fallbackValue = 30) => value === 'infinite' || value === '∞' || value === Infinity
   ? 'infinite' : [20, 30, 50, 100].includes(number(value)) ? number(value) : fallbackValue;
+const positiveInteger = (value, fallbackValue = 1) => Math.max(1, Math.trunc(number(value, fallbackValue)));
 
 export function calculateLearningLevel(record) {
   if (!record?.learned) return record?.firstSeenAt ? 1 : 0;
@@ -110,12 +113,17 @@ function sanitizeCategoryList(value, fallbackList, allowed = CATEGORY_IDS) {
 function sanitizeSettings(source = {}, available = CATEGORY_IDS) {
   const selectedMode = ['review', 'browse', 'test'].includes(source.selectedMode)
     ? source.selectedMode : source.selectedMode === 'new' ? 'review' : 'review';
+  const reviewRangeStart = positiveInteger(source.reviewRangeStart, 1);
+  const reviewRangeEnd = source.reviewRangeEnd === null || source.reviewRangeEnd === undefined || source.reviewRangeEnd === ''
+    ? null : Math.max(reviewRangeStart, positiveInteger(source.reviewRangeEnd, reviewRangeStart));
   return {
     selectedMode,
     reviewCategories: sanitizeCategoryList(source.reviewCategories, available, available),
     reviewScript: validScript(source.reviewScript ?? source.script),
     reviewCount: validCount(source.reviewCount ?? source.count, 30),
     reviewMode: ['smart', 'uniform'].includes(source.reviewMode) ? source.reviewMode : 'smart',
+    reviewRangeStart,
+    reviewRangeEnd,
     browseCategory: CATEGORY_IDS.includes(source.browseCategory) ? source.browseCategory : CATEGORY_IDS.find((id) => id !== 'basic') ?? 'basic',
     testCategories: sanitizeCategoryList(source.testCategories, CATEGORY_IDS),
     testScript: validScript(source.testScript ?? source.script),

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="零依赖的日语假名与发音规则闪卡复习工具">
   <title>日语假名复习</title>
-  <link rel="stylesheet" href="styles.css?v=20260820-1">
+  <link rel="stylesheet" href="styles.css?v=20260820-2">
 </head>
 <body>
   <header class="site-header">
@@ -100,6 +100,13 @@
     </section>
   </main>
 
+  <dialog id="review-range-dialog" class="review-range-dialog" aria-labelledby="review-range-title">
+    <div class="dialog-head"><div><p class="eyebrow">当前勾选类别</p><h2 id="review-range-title">复习范围预览</h2></div><button id="close-review-range" class="text" type="button" aria-label="关闭范围预览">✕</button></div>
+    <p class="muted">所有内容按固定顺序连续编号，绿色项目就是本轮会使用的范围。</p>
+    <div id="review-range-dialog-controls"></div>
+    <div id="review-range-grid" class="review-range-grid" role="listbox" aria-label="全部可复习假名" aria-multiselectable="true"></div>
+  </dialog>
+
   <dialog id="settings-dialog">
     <form method="dialog" class="dialog-head"><h2>设置</h2><button class="text" value="cancel" aria-label="关闭">✕</button></form>
     <section class="dialog-section">
@@ -122,6 +129,6 @@
     <div class="actions"><button class="danger" id="confirm-reset">确认清空</button><button id="cancel-reset">取消</button></div>
   </dialog>
 
-  <script type="module" src="js/app.js?v=20260820-1"></script>
+  <script type="module" src="js/app.js?v=20260820-2"></script>
 </body>
 </html>

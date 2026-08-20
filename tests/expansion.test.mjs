@@ -109,6 +109,38 @@ test('review pools filter categories, learned items, and weak items', () => {
   assert.deepEqual(flash.buildReviewPool(data.STUDY_ITEMS, state, ['handakuten'], { learnedOnly: true, weakOnly: true }).map((item) => item.id), ['handakuten-pa']);
 });
 
+test('review range follows merged category order before weak filtering', () => {
+  const { store } = memoryStore();
+  storage.setCourseUntil(46, store);
+  storage.joinCategory('dakuten', store);
+  storage.recordRating(data.STUDY_ITEMS[44].id, 'fuzzy', store);
+  storage.recordRating('dakuten-ga', 'fuzzy', store);
+  const state = storage.loadState(store);
+
+  const ranged = flash.buildRangedReviewPool(
+    data.STUDY_ITEMS,
+    state,
+    ['basic', 'dakuten'],
+    { start: 45, end: 48 },
+    { learnedOnly: true },
+  );
+  assert.deepEqual(ranged.map((item) => item.id), [
+    data.STUDY_ITEMS[44].id,
+    data.STUDY_ITEMS[45].id,
+    'dakuten-ga',
+    'dakuten-gi',
+  ]);
+
+  const weak = flash.buildRangedReviewPool(
+    data.STUDY_ITEMS,
+    state,
+    ['basic', 'dakuten'],
+    { start: 45, end: 48 },
+    { learnedOnly: true, weakOnly: true },
+  );
+  assert.deepEqual(weak.map((item) => item.id), [data.STUDY_ITEMS[44].id, 'dakuten-ga']);
+});
+
 test('smart review uses 1 3 5 weights and avoids the last three cards when possible', () => {
   assert.equal(flash.reviewWeight({ lastResult: 'known' }), 1);
   assert.equal(flash.reviewWeight({ lastResult: 'fuzzy' }), 3);
