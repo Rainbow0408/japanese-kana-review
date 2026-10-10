@@ -1,0 +1,71 @@
+name: Windows desktop
+
+on:
+  pull_request:
+  push:
+    branches: ['**']
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: test
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Check tag matches package version
+        shell: pwsh
+        run: |
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          if ($env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match package.json version.' }
+      - run: npm run build:win
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Japanese-Kana-Review-windows-x64
+          compression-level: 0
+          path: |
+            dist/Japanese-Kana-Review-*-win-x64-setup.exe
+            dist/Japanese-Kana-Review-*-win-x64-portable.exe
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+      - name: Create draft release and upload files
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          $version = (Get-Content package.json | ConvertFrom-Json).version
+          $files = @("dist/Japanese-Kana-Review-$version-win-x64-setup.exe", "dist/Japanese-Kana-Review-$version-win-x64-portable.exe", 'dist/SHA256SUMS.txt')
+          gh release view $tag --json isDraft 2>$null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $tag --draft --verify-tag --title "日语假名复习 $tag" --generate-notes
+            if ($LASTEXITCODE -ne 0) { throw 'Draft release creation failed.' }
+          } else {
+            $release = gh release view $tag --json isDraft | ConvertFrom-Json
+            if (-not $release.isDraft) { throw 'Refusing to change a published release.' }
+          }
+          gh release upload $tag @files --clobber
+          if ($LASTEXITCODE -ne 0) { throw 'Draft asset upload failed.' }

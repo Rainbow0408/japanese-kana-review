@@ -1,0 +1,23 @@
+{
+  "name": "japanese-kana-review",
+  "version": "1.0.0",
+  "description": "离线日语假名学习与复习桌面应用",
+  "author": "rainbow0408",
+  "license": "MIT",
+  "type": "module",
+  "main": "desktop/main.mjs",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "setup:desktop": "install-electron",
+    "start": "electron .",
+    "build:win": "electron-builder --win --x64 --publish never && node tools/verify-package.mjs && node tools/checksums.mjs",
+    "checksums": "node tools/checksums.mjs",
+    "verify-package": "node tools/verify-package.mjs"
+  },
+  "devDependencies": {
+    "@electron/asar": "4.3.1",
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3"
+  }
+}

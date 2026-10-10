@@ -26,3 +26,17 @@ debug-dump*
 # Optional local tooling
 node_modules/
 coverage/
+
+# Desktop build output and local tooling
+dist/
+artifacts/
+.cache/
+desktop-test-results/
+
+# Learning backup files and task-local notes
+kana-backup-*.json
+kana-review-backup-*.json
+kana-records-*.json
+task_plan.md
+findings.md
+progress.md

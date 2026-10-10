@@ -165,18 +165,17 @@ test('simple browsing clamps positions and reports category completion', () => {
   assert.equal(learning.isBrowseComplete(group, 19), true);
 });
 
-test('audio uses local base files and speech fallback for expanded content', async () => {
-  assert.equal(audio.audioSourceFor(data.itemById('so')), 'assets/audio/so.mp3');
-  assert.equal(audio.audioSourceFor(data.itemById('youon-kya')), null);
-  let spoken = '';
+test('audio uses bundled WAV files for both base and expanded content', async () => {
+  assert.equal(audio.audioSourceFor(data.itemById('so')), 'assets/audio/so.wav');
+  assert.equal(audio.audioSourceFor(data.itemById('youon-kya')), 'assets/audio/youon-kya.wav');
+  let source = '';
   const result = await audio.playStudyItem(data.itemById('youon-kya'), {
     manual: true,
-    speechFactory: (text) => ({ text, lang: '' }),
-    speak: (utterance, resolve) => { spoken = utterance.text; resolve(); },
+    audioFactory: (path) => { source = path; return { pause() {}, play: async () => {} }; },
   });
   assert.equal(result.ok, true);
-  assert.equal(result.method, 'speech');
-  assert.equal(spoken, 'きゃ');
+  assert.equal(result.method, 'local');
+  assert.equal(source, 'assets/audio/youon-kya.wav');
 });
 
 test('static page is review first and prepared for grouped content', () => {

@@ -140,7 +140,7 @@ test('runtime code avoids Object.groupBy for older desktop browsers', () => {
 });
 
 test('browser assets use one cache-busting release version', () => {
-  const release = '20260820-2';
+  const release = '20261010-1';
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const modules = ['app.js', 'storage.js', 'flashcards.js'].map((name) =>
     readFileSync(new URL(`../js/${name}`, import.meta.url), 'utf8'),
