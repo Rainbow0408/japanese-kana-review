@@ -1,5 +1,5 @@
-import { isWeakRecord } from './storage.js?v=20260820-2';
-import { sliceReviewRange } from './review-range.js?v=20260820-2';
+import { isWeakRecord } from './storage.js?v=20261010-1';
+import { sliceReviewRange } from './review-range.js?v=20261010-1';
 
 export function buildPool(items, range) {
   if (typeof range === 'number') return items.slice(0, Math.max(1, Math.min(range, items.length)));
@@ -23,7 +23,7 @@ export function buildReviewPool(items, state, categories, options = {}) {
     if (!selected.has(item.category)) return false;
     const record = state.records?.[item.id];
     const activeBasic = item.category === 'basic' && item.index <= Number(state.courseUntil || 0);
-    const learned = activeBasic || Boolean(record?.learned);
+    const learned = item.category === 'basic' ? activeBasic : Boolean(record?.learned);
     if (options.learnedOnly && !learned) return false;
     if (options.weakOnly && !isWeakRecord(record)) return false;
     return true;

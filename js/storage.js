@@ -1,6 +1,7 @@
-import { BASIC_KANA, CATEGORY_IDS, STUDY_ITEMS, itemById, itemsByCategory } from './data.js?v=20260820-2';
+import { BASIC_KANA, CATEGORY_IDS, STUDY_ITEMS, itemById, itemsByCategory } from './data.js?v=20261010-1';
 
 export const STORAGE_KEY = 'kana-flashcards-v1';
+export const RECOVERY_STORAGE_KEY = `${STORAGE_KEY}:pre-import`;
 export const DEFAULT_SETTINGS = {
   selectedMode: 'review',
   reviewCategories: ['basic'],
@@ -32,9 +33,122 @@ export const createRecord = () => ({
   lastResult: null,
 });
 
-const browserStore = () => globalThis.localStorage;
+const sessionMemory = new Map();
+const memoryStore = {
+  getItem: (key) => sessionMemory.get(key) ?? null,
+  setItem: (key, value) => sessionMemory.set(key, value),
+  removeItem: (key) => sessionMemory.delete(key),
+  isPersistent: false,
+};
+const browserAdapters = new WeakMap();
+
+function writeValuesVerified(entries, store) {
+  if (store.isPersistent === false) throw new Error('当前存储无法持久保存，请先导出当前记录后再导入。');
+  const previous = new Map();
+  const touched = [];
+  try {
+    for (const [key] of entries) previous.set(key, store.getItem(key));
+    for (const [key, value] of entries) {
+      touched.push(key);
+      store.setItem(key, value);
+      if (store.getItem(key) !== value) throw new Error('保存后的数据验证失败。');
+    }
+  } catch (cause) {
+    let rollbackSucceeded = true;
+    for (const key of touched.reverse()) {
+      try {
+        const oldValue = previous.get(key);
+        if (store.getItem(key) !== oldValue) {
+          if (oldValue === null) store.removeItem(key); else store.setItem(key, oldValue);
+        }
+        if (store.getItem(key) !== oldValue) throw new Error('rollback verification failed');
+      } catch {
+        rollbackSucceeded = false;
+        // Keep the verified pre-import copy if restoring the main state failed.
+        break;
+      }
+    }
+    const error = new Error(rollbackSucceeded ? '保存或验证失败，原有记录已保留。' : '保存失败，旧记录恢复失败。请保留当前页面并导出记录，可使用“恢复导入前记录”重试。', { cause });
+    error.rollbackSucceeded = rollbackSucceeded;
+    throw error;
+  }
+}
+
+function adaptBrowserStore(store) {
+  if (browserAdapters.has(store)) return browserAdapters.get(store);
+  const cache = new Map();
+  let transient = false;
+  const adapter = {
+    get isPersistent() { return !transient; },
+    getItem(key) {
+      if (transient && key === RECOVERY_STORAGE_KEY) {
+        try {
+          const value = store.getItem(key);
+          if (value === null) cache.delete(key); else cache.set(key, value);
+          return value;
+        } catch {}
+      }
+      if (!transient) {
+        try {
+          const value = store.getItem(key);
+          if (value === null) cache.delete(key); else cache.set(key, value);
+          return value;
+        } catch { transient = true; }
+      }
+      return cache.get(key) ?? null;
+    },
+    setItem(key, value) {
+      cache.set(key, value);
+      if (!transient) { try { store.setItem(key, value); } catch { transient = true; } }
+    },
+    removeItem(key) {
+      cache.delete(key);
+      try {
+        store.removeItem(key);
+        if (store.getItem(key) !== null) throw new Error('删除后的数据验证失败。');
+        return true;
+      } catch {
+        transient = true;
+        return false;
+      }
+    },
+    markResetVerified() { transient = false; },
+    writeVerified(entries, { retryPersistence = false } = {}) {
+      if (transient && !retryPersistence) throw new Error('当前存储无法持久保存，请先导出当前记录后再导入。');
+      try {
+        writeValuesVerified(entries, store);
+        for (const [key, value] of entries) cache.set(key, value);
+        transient = false;
+      } catch (error) {
+        if (error.rollbackSucceeded === false) {
+          transient = true;
+          const recovery = entries.find(([key]) => key === RECOVERY_STORAGE_KEY);
+          if (recovery) cache.set(...recovery);
+        }
+        throw error;
+      }
+    },
+  };
+  browserAdapters.set(store, adapter);
+  return adapter;
+}
+const browserStore = () => {
+  try { return globalThis.localStorage ? adaptBrowserStore(globalThis.localStorage) : memoryStore; } catch { return memoryStore; }
+};
+export const isStoragePersistent = () => browserStore().isPersistent;
+export function readStoredValue(key, store = browserStore()) { return store.getItem(key); }
+
+// Imports need confirmed durable writes; ordinary learning still supports the
+// existing in-memory fallback when browser storage is unavailable.
+export function replaceStateVerified(state, { store = browserStore(), recoveryRaw, retryPersistence = false } = {}) {
+  const entries = [];
+  if (recoveryRaw !== undefined) entries.push([RECOVERY_STORAGE_KEY, recoveryRaw]);
+  entries.push([STORAGE_KEY, JSON.stringify(state)]);
+  if (store.writeVerified) store.writeVerified(entries, { retryPersistence }); else writeValuesVerified(entries, store);
+  return state;
+}
 const number = (value, fallbackValue = 0) => Number.isFinite(Number(value)) ? Number(value) : fallbackValue;
-const clamp = (value, min, max) => Math.min(max, Math.max(min, number(value, min)));
+const clamp = (value, min, max) => Math.min(max, Math.max(min, Math.trunc(number(value, min))));
 const isoOrNull = (value) => typeof value === 'string' && value ? value : null;
 const validResult = (value) => ['known', 'fuzzy', 'unknown'].includes(value) ? value : null;
 const validStatus = (value) => ['not_started', 'browsing', 'browsed', 'joined'].includes(value) ? value : 'not_started';
@@ -42,6 +156,8 @@ const validScript = (value) => ['mixed', 'hiragana', 'katakana'].includes(value)
 const validCount = (value, fallbackValue = 30) => value === 'infinite' || value === '∞' || value === Infinity
   ? 'infinite' : [20, 30, 50, 100].includes(number(value)) ? number(value) : fallbackValue;
 const positiveInteger = (value, fallbackValue = 1) => Math.max(1, Math.trunc(number(value, fallbackValue)));
+const counter = (value, fallbackValue = 0) => clamp(number(value, fallbackValue), 0, Number.MAX_SAFE_INTEGER);
+const incrementCounter = (value) => value < Number.MAX_SAFE_INTEGER ? value + 1 : value;
 
 export function calculateLearningLevel(record) {
   if (!record?.learned) return record?.firstSeenAt ? 1 : 0;
@@ -54,12 +170,25 @@ export function calculateLearningLevel(record) {
 }
 
 function sanitizeRecord(source = {}, learned = false) {
-  const oldShown = Math.max(0, number(source.shown));
-  const knownCount = Math.max(0, number(source.knownCount ?? source.known));
-  const unsureCount = Math.max(0, number(source.unsureCount ?? source.fuzzy));
-  const unknownCount = Math.max(0, number(source.unknownCount ?? source.unknown));
-  const totalReviews = Math.max(oldShown, number(source.totalReviews), knownCount + unsureCount + unknownCount);
   let lastResult = validResult(source.lastResult);
+  const counts = {
+    knownCount: counter(source.knownCount ?? source.known),
+    unsureCount: counter(source.unsureCount ?? source.fuzzy),
+    unknownCount: counter(source.unknownCount ?? source.unknown),
+  };
+  // Older builds could append one rating past the common safe-integer budget.
+  // Keep valid history unchanged; remove only excess, from the latest rating
+  // category first, without ever adding counters outside that budget.
+  const latestCounter = { known: 'knownCount', fuzzy: 'unsureCount', unknown: 'unknownCount' }[lastResult];
+  const countOrder = Object.keys(counts).filter((key) => key !== latestCounter);
+  if (latestCounter) countOrder.push(latestCounter);
+  let remaining = Number.MAX_SAFE_INTEGER;
+  for (const key of countOrder) {
+    counts[key] = Math.min(counts[key], remaining);
+    remaining -= counts[key];
+  }
+  const { knownCount, unsureCount, unknownCount } = counts;
+  const totalReviews = Math.max(counter(source.shown), counter(source.totalReviews), Number.MAX_SAFE_INTEGER - remaining);
   if (!lastResult) lastResult = unknownCount ? 'unknown' : unsureCount ? 'fuzzy' : knownCount ? 'known' : null;
   const record = {
     ...createRecord(),
@@ -68,9 +197,9 @@ function sanitizeRecord(source = {}, learned = false) {
     knownCount,
     unsureCount,
     unknownCount,
-    knownStreak: Math.max(0, number(source.knownStreak, lastResult === 'known' ? 1 : 0)),
-    quizCorrect: Math.max(0, number(source.quizCorrect)),
-    quizWrong: Math.max(0, number(source.quizWrong)),
+    knownStreak: Math.min(knownCount, counter(source.knownStreak, lastResult === 'known' ? 1 : 0)),
+    quizCorrect: counter(source.quizCorrect),
+    quizWrong: counter(source.quizWrong),
     firstSeenAt: isoOrNull(source.firstSeenAt),
     firstLearnedAt: isoOrNull(source.firstLearnedAt),
     lastReviewedAt: isoOrNull(source.lastReviewedAt ?? source.lastPracticed),
@@ -89,7 +218,7 @@ function emptyStatus() {
 function fallback() {
   return {
     version: 4,
-    settings: { ...DEFAULT_SETTINGS, reviewCategories: [...DEFAULT_SETTINGS.reviewCategories], testCategories: [...DEFAULT_SETTINGS.testCategories] },
+    settings: { ...DEFAULT_SETTINGS, reviewCategories: [], testCategories: [...DEFAULT_SETTINGS.testCategories] },
     courseUntil: 0,
     categoryStatus: emptyStatus(),
     browseProgress: null,
@@ -160,7 +289,6 @@ function migrate(parsed = {}) {
   if (state.browseProgress && state.categoryStatus[state.browseProgress.category] === 'not_started') state.categoryStatus[state.browseProgress.category] = 'browsing';
   const available = learnedCategories(state);
   state.settings = sanitizeSettings(parsed.settings, available);
-  if (!state.settings.reviewCategories.length && available.length) state.settings.reviewCategories = [...available];
   return state;
 }
 
@@ -194,7 +322,7 @@ export function saveBrowseProgress(category, index, store = browserStore(), now 
   const group = itemsByCategory(category);
   if (!group.length) return state;
   state.browseProgress = { category, index: clamp(index, 0, group.length - 1), startedAt: state.browseProgress?.category === category ? state.browseProgress.startedAt : now };
-  state.categoryStatus[category] = 'browsing';
+  if (state.categoryStatus[category] !== 'joined') state.categoryStatus[category] = 'browsing';
   state.settings.browseCategory = category;
   return save(state, store);
 }
@@ -241,10 +369,12 @@ export function recordRating(itemId, rating, store = browserStore(), now = new D
   const state = loadState(store);
   if (!itemById(itemId) || !['known', 'fuzzy', 'unknown'].includes(rating)) return state;
   const record = sanitizeRecord(state.records[itemId]);
-  record.totalReviews += 1;
-  if (rating === 'known') { record.knownCount += 1; record.knownStreak += 1; }
-  if (rating === 'fuzzy') { record.unsureCount += 1; record.knownStreak = 0; }
-  if (rating === 'unknown') { record.unknownCount += 1; record.knownStreak = 0; }
+  if (record.totalReviews < Number.MAX_SAFE_INTEGER) {
+    record.totalReviews += 1;
+    const key = { known: 'knownCount', fuzzy: 'unsureCount', unknown: 'unknownCount' }[rating];
+    record[key] += 1;
+  }
+  record.knownStreak = rating === 'known' ? Math.min(record.knownCount, incrementCounter(record.knownStreak)) : 0;
   record.lastResult = rating;
   record.lastReviewedAt = now;
   record.learningLevel = calculateLearningLevel(record);
@@ -256,7 +386,7 @@ export function recordQuiz(itemId, correct, store = browserStore()) {
   const state = loadState(store);
   if (!itemById(itemId)) return state;
   const record = sanitizeRecord(state.records[itemId]);
-  if (correct) record.quizCorrect += 1; else record.quizWrong += 1;
+  if (correct) record.quizCorrect = incrementCounter(record.quizCorrect); else record.quizWrong = incrementCounter(record.quizWrong);
   state.records[itemId] = record;
   return save(state, store);
 }
@@ -289,7 +419,17 @@ export const setLearnedUntil = setCourseUntil;
 export function getItemRecord(itemId, store = browserStore()) { return loadState(store).records[itemId] ?? null; }
 export const getKanaRecord = getItemRecord;
 export function proficiencyFor(record) { return ['new', 'seen', 'developing', 'familiar', 'strong'][calculateLearningLevel(record)] ?? 'new'; }
-export function resetState(store = browserStore()) { try { store.removeItem(STORAGE_KEY); } catch {} return fallback(); }
+export function resetStateWithResult(store = browserStore()) {
+  const failedKeys = [];
+  for (const key of [STORAGE_KEY, RECOVERY_STORAGE_KEY]) {
+    try {
+      if (store.removeItem(key) === false || store.getItem(key) !== null) failedKeys.push(key);
+    } catch { failedKeys.push(key); }
+  }
+  if (!failedKeys.length) store.markResetVerified?.();
+  return { state: fallback(), persistentCleared: failedKeys.length === 0 && store.isPersistent !== false, failedKeys };
+}
+export function resetState(store = browserStore()) { return resetStateWithResult(store).state; }
 
 // Compatibility for v3 callers while the UI migrates to the category model.
 export function completeLearningGroup(group, store = browserStore(), now = new Date().toISOString()) {

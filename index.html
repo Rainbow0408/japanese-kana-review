@@ -5,48 +5,68 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="description" content="零依赖的日语假名与发音规则闪卡复习工具">
   <title>日语假名复习</title>
-  <link rel="stylesheet" href="styles.css?v=20260820-2">
+  <meta name="theme-color" content="#245d49">
+  <meta name="application-name" content="Kana Flashcards">
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="stylesheet" href="styles.css?v=20261010-1">
 </head>
 <body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="icon-review" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 6.1A8 8 0 0 1 20 12M4 12a8 8 0 0 0 13.9 5.9"/></symbol>
+    <symbol id="icon-book" viewBox="0 0 24 24"><path d="M12 5v16M12 5C9 3 5 3 2 4v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-3-1-7-1-10 1Z"/></symbol>
+    <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="icon-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></symbol>
+    <symbol id="icon-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+    <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 3v18h17M8 15v-4M13 15V7M18 15v-6"/></symbol>
+    <symbol id="icon-volume" viewBox="0 0 24 24"><path d="m11 4-6 5H2v6h3l6 5V4ZM15 8a6 6 0 0 1 0 8M18 5a10 10 0 0 1 0 14"/></symbol>
+    <symbol id="icon-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="icon-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 5M12 17h.01"/></symbol>
+    <symbol id="icon-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </svg>
+  <a class="skip-link" href="#main-content">跳到学习内容</a>
   <header class="site-header">
-    <button class="brand text" data-view="home">日语假名复习 <small>快速闪卡，把学过的内容真正记牢。</small></button>
+    <button class="brand text" data-view="home" aria-label="日语假名复习，返回首页"><span class="brand-mark" lang="ja" aria-hidden="true">あ</span><span>日语假名复习<small>KANA · 每日练习</small></span></button>
     <nav aria-label="主要导航">
-      <button id="open-settings">设置</button>
-      <button data-view="table">假名表</button>
-      <button data-view="records">学习记录</button>
+      <button data-view="table" aria-label="假名表"><svg class="icon" aria-hidden="true"><use href="#icon-grid"/></svg><span>假名表</span></button>
+      <button data-view="records" aria-label="学习记录"><svg class="icon" aria-hidden="true"><use href="#icon-chart"/></svg><span>学习记录</span></button>
+      <button id="open-settings" aria-label="设置"><svg class="icon" aria-hidden="true"><use href="#icon-settings"/></svg><span>设置</span></button>
     </nav>
   </header>
 
-  <main>
+  <main id="main-content" tabindex="-1">
     <section id="home" class="view active">
       <div class="dashboard-head">
         <div>
-          <p class="eyebrow">每日快速复习</p>
-          <h1>日语假名复习</h1>
-          <p class="subtitle">快速闪卡，把学过的内容真正记牢。</p>
+          <p class="eyebrow"><span class="live-dot" aria-hidden="true"></span> 小步练习 · 每日进步</p>
+          <h1>把假名，<br><span>记得更牢。</span></h1>
+          <p class="subtitle">从一个音开始，让每一次练习都有收获。</p>
         </div>
         <div class="overview-card" aria-label="学习内容概览">
+          <p class="overview-label">你的学习足迹 <span lang="ja" aria-hidden="true">あ → ア</span></p>
           <div class="overview-numbers"><span>已加入复习 <b id="dashboard-learned">0</b></span><span>薄弱内容 <b id="dashboard-weak">0</b></span></div>
-          <div class="dashboard-progress" aria-hidden="true"><i id="dashboard-progress"></i></div>
+          <div class="dashboard-progress" role="progressbar" aria-label="加入复习池的内容比例" aria-valuemin="0" aria-valuemax="128" aria-valuenow="0"><i id="dashboard-progress"></i></div>
           <p id="dashboard-advice" class="advice">先把学过的类别加入复习池。</p>
         </div>
       </div>
 
+      <div class="section-heading"><h2>学习地图</h2><span>六类内容，循序渐进</span></div>
       <div id="category-overview" class="category-overview" aria-label="学习内容状态"></div>
 
+      <div class="section-heading mode-heading"><h2>今天，练一点什么？</h2><span>选择适合你的节奏</span></div>
       <div class="mode-grid" aria-label="学习模式">
         <button class="mode-card selected" data-mode="review" aria-pressed="true">
-          <span class="mode-icon">🔁</span><b>巩固复习</b><small>从已学内容中随机闪卡，薄弱内容会更多出现。</small>
+          <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#icon-review"/></svg></span><b>巩固复习</b><small>温习已学内容，多练薄弱的音。</small><span class="mode-number" aria-hidden="true">01</span>
         </button>
         <button class="mode-card" data-mode="browse" aria-pressed="false">
-          <span class="mode-icon">📚</span><b>快速过新内容</b><small>快速浏览还没加入复习池的新内容。</small>
+          <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#icon-book"/></svg></span><b>快速过新内容</b><small>看看字形，听听发音，再加入复习。</small><span class="mode-number" aria-hidden="true">02</span>
         </button>
         <button class="mode-card" data-mode="test" aria-pressed="false">
-          <span class="mode-icon">🎯</span><b>自定义测试</b><small>自己选择内容、题量和出题方式。</small>
+          <span class="mode-icon"><svg class="icon" aria-hidden="true"><use href="#icon-target"/></svg></span><b>自定义测试</b><small>自由选题，检验自己的记忆。</small><span class="mode-number" aria-hidden="true">03</span>
         </button>
       </div>
 
       <section class="mode-panel" aria-live="polite">
+        <div class="panel-heading"><h2 id="mode-panel-title">安排这一轮练习</h2><p id="mode-panel-description">选好内容，开始一轮专注的复习。</p></div>
         <div id="mode-settings"></div>
         <p id="mode-message" class="inline-note" hidden></p>
         <div class="home-actions">
@@ -67,7 +87,7 @@
         <div id="practice-content"></div>
         <p id="practice-feedback" class="feedback" aria-live="polite"></p>
         <p id="audio-note" class="audio-note" aria-live="polite" hidden></p>
-        <button class="text replay" id="replay-audio" hidden>🔊 重播发音</button>
+        <button class="text replay" id="replay-audio" hidden><svg class="icon" aria-hidden="true"><use href="#icon-volume"/></svg>重播发音</button>
       </div>
       <p class="keyboard-hint">空格：显示答案 / 认识　1：认识　2：模糊　3：不认识</p>
     </section>
@@ -84,7 +104,7 @@
 
     <section id="table" class="view">
       <div class="page-title"><p class="eyebrow">完整学习内容</p><h1>假名表</h1></div>
-      <div class="table-tabs" role="tablist" aria-label="假名类别">
+      <div class="table-tabs" role="group" aria-label="假名类别">
         <button class="selected" data-table-tab="basic">基础五十音</button>
         <button data-table-tab="marks">浊音 / 半浊音</button>
         <button data-table-tab="youon">拗音</button>
@@ -94,11 +114,12 @@
     </section>
 
     <section id="records" class="view">
-      <div class="page-title"><p class="eyebrow">保存在当前浏览器</p><h1>学习记录</h1></div>
+      <div class="page-title"><p id="record-storage-label" class="eyebrow">保存在当前浏览器</p><h1>学习记录</h1></div>
       <div id="record-overview" class="stats"></div>
       <div id="record-list" class="category-records"></div>
     </section>
   </main>
+  <footer class="site-footer"><span>每天一点，慢慢记牢。</span><span id="storage-note">无需登录 · 学习记录保存在当前浏览器</span></footer>
 
   <dialog id="review-range-dialog" class="review-range-dialog" aria-labelledby="review-range-title">
     <div class="dialog-head"><div><p class="eyebrow">当前勾选类别</p><h2 id="review-range-title">复习范围预览</h2></div><button id="close-review-range" class="text" type="button" aria-label="关闭范围预览">✕</button></div>
@@ -107,8 +128,8 @@
     <div id="review-range-grid" class="review-range-grid" role="listbox" aria-label="全部可复习假名" aria-multiselectable="true"></div>
   </dialog>
 
-  <dialog id="settings-dialog">
-    <form method="dialog" class="dialog-head"><h2>设置</h2><button class="text" value="cancel" aria-label="关闭">✕</button></form>
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <form method="dialog" class="dialog-head"><h2 id="settings-title">设置</h2><button class="text" value="cancel" aria-label="关闭">✕</button></form>
     <section class="dialog-section">
       <h3>基础五十音旧进度</h3>
       <p class="muted">仅用于兼容原来的 46 音进度。降低进度不会删除历史评分。</p>
@@ -118,17 +139,50 @@
     </section>
     <section class="dialog-section data-management">
       <h3>数据管理</h3>
-      <p class="muted">学习记录只保存在这个浏览器中。</p>
+      <p id="storage-setting-note" class="muted">学习记录只保存在这个浏览器中。</p>
+      <p class="muted">导出 JSON 备份，可以在网页版与桌面版之间迁移全部设置和学习记录。导入前会先显示预览。</p>
+      <div class="backup-actions"><button id="export-backup" type="button">导出备份</button><button id="import-backup" type="button">导入备份</button><button id="recover-backup" type="button" disabled>恢复导入前记录</button></div>
+      <input id="backup-file" type="file" accept=".json,application/json" hidden>
+      <p id="backup-status" class="inline-note" role="status" aria-live="polite" hidden></p>
+      <p id="recovery-note" class="muted">尚无导入前记录可恢复。</p>
       <button class="text danger" id="reset" type="button">清空全部学习记录</button>
+    </section>
+    <section class="dialog-section about-section">
+      <h3>关于与许可</h3>
+      <p>日语假名复习 · 版本 1.0.0</p>
+      <p class="muted">假名与例词音频：VOICEVOX:四国めたん</p>
+      <p class="muted">应用代码使用 MIT 许可证。音频及桌面运行组件适用各自的第三方许可，详见随附的许可说明。</p>
+      <details class="license-details">
+        <summary>音频使用条件</summary>
+        <p>语音署名：VOICEVOX:四国めたん（ノーマル）。在满足官方条件时，商用和非商用均可免费使用。音频不适用代码的 MIT 许可证。</p>
+        <p>使用、修改或再分发音频时，须保留署名，遵守音源官方条款，并向后续使用者传递同样遵守条款的义务。完整条件以权利人原文为准。</p>
+        <p class="license-url">https://voicevox.hiroshiba.jp/term/</p>
+        <p class="license-url">https://zunko.jp/con_ongen_kiyaku.html</p>
+      </details>
+      <details id="license-details" class="license-details">
+        <summary>完整许可说明</summary>
+        <pre id="license-text">正在读取随附的许可说明…</pre>
+      </details>
     </section>
   </dialog>
 
-  <dialog id="confirm">
-    <h2>确定要清空全部学习记录吗？</h2>
-    <p>类别状态和所有历史评分都会被清除，此操作无法撤销。</p>
+  <dialog id="backup-confirm" aria-labelledby="backup-confirm-title" aria-describedby="backup-confirm-description">
+    <h2 id="backup-confirm-title">导入备份预览</h2>
+    <p id="backup-source" class="muted"></p>
+    <dl id="backup-preview" class="backup-preview"></dl>
+    <p id="backup-current" class="muted"></p>
+    <p id="backup-confirm-description">确认导入会覆盖当前全部设置和学习记录。覆盖前会保留一份旧数据，可从设置中恢复。</p>
+    <p id="backup-confirm-status" class="inline-note danger" role="alert" hidden></p>
+    <div class="actions"><button id="cancel-backup" type="button" autofocus>取消</button><button id="confirm-backup" class="primary" type="button">确认覆盖并导入</button></div>
+  </dialog>
+
+  <dialog id="confirm" aria-labelledby="confirm-title">
+    <h2 id="confirm-title">确定要清空全部学习记录吗？</h2>
+    <p>类别状态、所有历史评分和导入前恢复副本都会被清除，此操作无法撤销。</p>
+    <p id="reset-status" class="inline-note danger" role="alert" hidden></p>
     <div class="actions"><button class="danger" id="confirm-reset">确认清空</button><button id="cancel-reset">取消</button></div>
   </dialog>
 
-  <script type="module" src="js/app.js?v=20260820-2"></script>
+  <script type="module" src="js/app.js?v=20261010-1"></script>
 </body>
 </html>

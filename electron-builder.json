@@ -1,0 +1,28 @@
+{
+  "appId": "io.github.rainbow0408.japanese-kana-review",
+  "productName": "日语假名复习",
+  "copyright": "Copyright © 2026 rainbow0408",
+  "asar": true,
+  "directories": { "output": "dist", "buildResources": "assets" },
+  "files": [
+    "package.json", "desktop/main.mjs", "desktop/protocol.mjs", "desktop/security.mjs",
+    "index.html", "styles.css", "js/app.js", "js/audio.js", "js/backup.js", "js/data.js",
+    "js/flashcards.js", "js/keyboard.js", "js/new-learning.js", "js/review-range.js", "js/storage.js",
+    "assets/app.ico", "assets/app.png", "assets/favicon.svg", "assets/notices.txt",
+    "assets/audio/*.wav", "assets/audio/generation-manifest.json", "assets/audio/README.md", "assets/audio/TERMS.md",
+    "LICENSE", "THIRD_PARTY_NOTICES.md"
+  ],
+  "npmRebuild": false,
+  "win": {
+    "icon": "assets/app.ico", "executableName": "Japanese-Kana-Review",
+    "requestedExecutionLevel": "asInvoker",
+    "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }]
+  },
+  "nsis": {
+    "oneClick": true, "perMachine": false, "allowElevation": false,
+    "deleteAppDataOnUninstall": false, "createDesktopShortcut": true,
+    "createStartMenuShortcut": true, "shortcutName": "日语假名复习",
+    "artifactName": "Japanese-Kana-Review-${version}-win-${arch}-setup.${ext}"
+  },
+  "portable": { "artifactName": "Japanese-Kana-Review-${version}-win-${arch}-portable.${ext}" }
+}
