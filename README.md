@@ -2,7 +2,7 @@
 
 一个免费、离线、无需登录的日语假名闪卡学习工具。提供 Windows 软件，也保留可直接使用的网页版。
 
-[**下载 Windows 软件**](https://github.com/Rainbow0408/japanese-kana-review/releases/latest) · [查看所有版本](https://github.com/Rainbow0408/japanese-kana-review/releases) · [网页版](https://rainbow0408.github.io/japanese-kana-review/)
+[**下载 Windows 软件**](https://github.com/Rainbow0408/japanese-kana-review/releases/latest) · [查看所有版本](https://github.com/Rainbow0408/japanese-kana-review/releases) · [网页版](https://cv.loveming.me/japanese-kana-review/)
 
 ## 下载与使用
 
@@ -62,7 +62,7 @@
 
 ## 更新与反馈
 
-首版通过下载新版手动更新，暂不提供自动更新。安装新版或替换免安装程序后，使用原有记录即可；升级前建议导出备份。
+首版通过下载新版手动更新，暂不提供自动更新。升级前请导出备份并关闭软件，然后安装新版或替换免安装程序，继续使用原有记录。
 
 问题和建议可提交到 [GitHub Issues](https://github.com/Rainbow0408/japanese-kana-review/issues)，请附软件版本、系统版本和复现步骤。不要公开包含个人学习记录的备份文件。
 
